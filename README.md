@@ -1,7 +1,7 @@
 # gaiaOAuth2
 
 ## Description
-gaiaOAuth2 is a management tool for Salesforce B2C Account Manager that allows administrators to connect via OAuth2 to perform various management operations, including:
+gaiaOAuth2 is a management tool for Salesforce B2C Account Manager that allows administrators to connect via OAuth2 to perform scripted management operations, including:
 
 - Listing available organizations
 - Viewing users within an organization
