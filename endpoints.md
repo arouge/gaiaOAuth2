@@ -28,7 +28,7 @@ https://{amlocation}/dw/rest/v1/organizations
 ## User Endpoints
 
 ```
-https://{amlocation}/dw/rest/v1/users/search/findAllByOrg
+https://{amlocation}/dw/rest/v1/users/search/findAllByOrganization={organizationId}
 ```
 **Purpose**: Retrieves all users belonging to a specific organization.  
 **Parameters**:
