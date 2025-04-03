@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<script>
+   let myURL = window.location.href
+   console.log(myURL)
+   if(myURL.search("#access_token"))
+   {
+      let result = myURL.replace("#access_token","?access_token")
+      result = result.replace("redirect","process_token")
+      window.location.replace(result)
+      document.write(result)
+   }
+</script>
+
+</body>
+</html>

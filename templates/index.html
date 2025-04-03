@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organization Management Portal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 1rem 0;
+            border-radius: 8px 8px 0 0;
+            margin-top: 20px;
+        }
+        
+        header h1 {
+            text-align: center;
+            font-size: 2rem;
+        }
+        
+        .org-selector {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin: 20px 0;
+        }
+        
+        .org-selector h2 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        
+        .org-select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            color: #333;
+            background-color: #f9f9f9;
+        }
+        
+        .features {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 40px;
+            flex-wrap: wrap;
+        }
+        
+        .feature-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            width: 100%;
+            max-width: 400px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .card-header {
+            padding: 20px;
+            background: #3498db;
+            color: white;
+        }
+        
+        .card-header h2 {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+        
+        .card-body {
+            padding: 20px;
+        }
+        
+        .card-body p {
+            margin-bottom: 20px;
+            color: #555;
+        }
+        
+        .btn {
+            display: inline-block;
+            background-color: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: background-color 0.3s;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        
+        .btn-disabled:hover {
+            background-color: #95a5a6;
+        }
+        
+        .userlist {
+            background-color: #9b59b6;
+        }
+        
+        .userlist:hover {
+            background-color: #8e44ad;
+        }
+        
+        .audit {
+            background-color: #2ecc71;
+        }
+        
+        .audit:hover {
+            background-color: #27ae60;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 20px;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        .message {
+            padding: 10px;
+            text-align: center;
+            margin-top: 10px;
+            color: #e74c3c;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Organization Management Portal</h1>
+        </header>
+        
+        <!-- Organization Selector -->
+        <div class="org-selector">
+            <h2>Select an Organization</h2>
+            <select id="organizationSelect" class="org-select">
+                <option value="">-- Select an organization --</option>
+                {% for org in organizations %}
+                <option value="{{ org.id }}">{{ org.name }}</option>
+                {% endfor %}
+            </select>
+            <div id="noOrgMessage" class="message" style="display: none;">
+                Please select an organization first
+            </div>
+        </div>
+        
+        <div class="features">
+            <div class="feature-card">
+                <div class="card-header userlist">
+                    <h2>User List</h2>
+                </div>
+                <div class="card-body">
+                    <p>This section lists all users in your organization as specified in the config.cfg file. You can view and manage user details, permissions, and settings.</p>
+                    <a href="#" id="userListBtn" class="btn btn-disabled">View User List</a>
+                </div>
+            </div>
+            
+            <div class="feature-card">
+                <div class="card-header audit">
+                    <h2>Audit Report</h2>
+                </div>
+                <div class="card-body">
+                    <p>Download a comprehensive audit file containing activity records for all users in your organization. Track actions, changes, and system access events.</p>
+                    <a href="#" id="auditBtn" class="btn btn-disabled">Download Audit File</a>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>&copy; 2025 Organization Management System</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const orgSelect = document.getElementById('organizationSelect');
+            const userListBtn = document.getElementById('userListBtn');
+            const auditBtn = document.getElementById('auditBtn');
+            const noOrgMessage = document.getElementById('noOrgMessage');
+            
+            // Update buttons state based on selection
+            function updateButtons() {
+                const selectedOrgId = orgSelect.value;
+                
+                if (selectedOrgId) {
+                    // Enable buttons and update hrefs with the selected organization ID
+                    userListBtn.href = `/users?organizationId=${selectedOrgId}`;
+                    auditBtn.href = `/audit?organizationId=${selectedOrgId}`;
+                    
+                    userListBtn.classList.remove('btn-disabled');
+                    auditBtn.classList.remove('btn-disabled');
+                    
+                    noOrgMessage.style.display = 'none';
+                } else {
+                    // Disable buttons if no organization is selected
+                    userListBtn.href = '#';
+                    auditBtn.href = '#';
+                    
+                    userListBtn.classList.add('btn-disabled');
+                    auditBtn.classList.add('btn-disabled');
+                }
+            }
+            
+            // Initialize buttons state
+            updateButtons();
+            
+            // Add event listener for organization selection change
+            orgSelect.addEventListener('change', updateButtons);
+            
+            // Prevent clicking on disabled buttons
+            userListBtn.addEventListener('click', function(e) {
+                if (this.classList.contains('btn-disabled')) {
+                    e.preventDefault();
+                    noOrgMessage.style.display = 'block';
+                }
+            });
+            
+            auditBtn.addEventListener('click', function(e) {
+                if (this.classList.contains('btn-disabled')) {
+                    e.preventDefault();
+                    noOrgMessage.style.display = 'block';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

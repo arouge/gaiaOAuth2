@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableau de bord - Simplifié</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .card {
+            margin-bottom: 20px;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        }
+        .stats-card {
+            height: 100%;
+            text-align: center;
+            padding: 20px 10px;
+        }
+        .stats-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4 mb-5">
+        <h1 class="mb-4">Tableau de bord des utilisateurs</h1>
+        
+        <!-- Statistiques générales -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="card bg-primary text-white">
+                    <div class="stats-card">
+                        <h5>Nombre d'utilisateurs</h5>
+                        <div class="stats-value">{{ users|length }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Compteur calculé manuellement -->
+            <div class="col-md-3 mb-3">
+                <div class="card bg-success text-white">
+                    <div class="stats-card">
+                        <h5>Par organisation</h5>
+                        <div class="stats-value" id="orgCount">...</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Compteur des utilisateurs avec connexion récente -->
+            <div class="col-md-3 mb-3">
+                <div class="card bg-warning text-dark">
+                    <div class="stats-card">
+                        <h5>Avec connexion</h5>
+                        <div class="stats-value" id="withLoginCount">...</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Compteur des utilisateurs sans connexion récente -->
+            <div class="col-md-3 mb-3">
+                <div class="card bg-info text-white">
+                    <div class="stats-card">
+                        <h5>Sans connexion</h5>
+                        <div class="stats-value" id="withoutLoginCount">...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Graphiques simples -->
+        <div class="row mb-4">
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Répartition par organisation</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="organizationsChart" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Utilisateurs avec/sans connexion</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="loginStatusChart" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Expiration des mots de passe</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="passwordExpirationChart" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tableau des utilisateurs simplifié -->
+        <div class="card">
+            <div class="card-header">
+                <h5>Liste des utilisateurs (10 premiers)</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nom</th>
+                                <th>Email</th>
+                                <th>Organisation</th>
+                                <th>Dernière connexion</th>
+                                <th>Expiration MDP</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users[:10] %}
+                            <tr>
+                                <td>{{ user['id'] }}</td>
+                                <td>{{ user['displayName'] }}</td>
+                                <td>{{ user['mail'] }}</td>
+                                <td>{{ user['primaryOrganization']|default('-') }}</td>
+                                <td>{{ user['lastLoginDate']|default('-') }}</td>
+                                <td>{{ user['passwordExpirationTimestamp']|default('-') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+    <script>
+    // Données préparées côté serveur et insérées dans le JavaScript
+    var userData = [
+        {% for user in users %}
+        {
+            id: "{{ user['id'] }}",
+            displayName: "{{ user['displayName']|default('') }}",
+            organization: "{{ user['primaryOrganization']|default('Non assigné') }}",
+            hasLogin: {% if user['lastLoginDate'] and user['lastLoginDate']|string|length > 0 %}true{% else %}false{% endif %},
+            passwordExpiration: "{{ user['passwordExpirationTimestamp']|default('') }}"
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        // Comptages simples
+        var withLoginCount = 0;
+        var withoutLoginCount = 0;
+        var organizations = {};
+        var passwordExpiringCount = 0;
+        var passwordNotExpiringCount = 0;
+        
+        // Date actuelle et date dans 2 semaines
+        var now = new Date();
+        var twoWeeksLater = new Date();
+        twoWeeksLater.setDate(now.getDate() + 14);
+        
+        // Compter les utilisateurs
+        userData.forEach(function(user) {
+            // Comptage login
+            if (user.hasLogin) {
+                withLoginCount++;
+            } else {
+                withoutLoginCount++;
+            }
+            
+            // Comptage organisations
+            if (!organizations[user.organization]) {
+                organizations[user.organization] = 0;
+            }
+            organizations[user.organization]++;
+            
+            // Vérification expiration mot de passe
+            if (user.passwordExpiration) {
+                var expirationDate = new Date(user.passwordExpiration);
+                if (!isNaN(expirationDate.getTime()) && expirationDate <= twoWeeksLater) {
+                    passwordExpiringCount++;
+                } else {
+                    passwordNotExpiringCount++;
+                }
+            } else {
+                passwordNotExpiringCount++;
+            }
+        });
+        
+        // Mettre à jour les compteurs
+        document.getElementById('withLoginCount').textContent = withLoginCount;
+        document.getElementById('withoutLoginCount').textContent = withoutLoginCount;
+        document.getElementById('orgCount').textContent = Object.keys(organizations).length;
+        
+        // Graphique des organisations
+        var orgLabels = Object.keys(organizations);
+        var orgValues = Object.values(organizations);
+        var orgColors = [
+            '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b',
+            '#5a5c69', '#858796', '#6f42c1', '#fd7e14', '#20c9a6'
+        ];
+        
+        // Limiter à 10 organisations pour la lisibilité
+        if (orgLabels.length > 10) {
+            var otherOrgs = 0;
+            for (var i = 9; i < orgValues.length; i++) {
+                otherOrgs += orgValues[i];
+            }
+            orgLabels = orgLabels.slice(0, 9);
+            orgValues = orgValues.slice(0, 9);
+            orgLabels.push('Autres');
+            orgValues.push(otherOrgs);
+        }
+        
+        // Créer le graphique des organisations
+        var orgChart = new Chart(
+            document.getElementById('organizationsChart').getContext('2d'),
+            {
+                type: 'pie',
+                data: {
+                    labels: orgLabels,
+                    datasets: [{
+                        data: orgValues,
+                        backgroundColor: orgColors.slice(0, orgLabels.length)
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        }
+                    }
+                }
+            }
+        );
+        
+        // Créer le graphique d'expiration des mots de passe
+        var passwordChart = new Chart(
+            document.getElementById('passwordExpirationChart').getContext('2d'),
+            {
+                type: 'pie',
+                data: {
+                    labels: ['Expire < 2 semaines', 'Pas d\'expiration proche'],
+                    datasets: [{
+                        data: [passwordExpiringCount, passwordNotExpiringCount],
+                        backgroundColor: ['#e74a3b', '#4e73df']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        }
+                    }
+                }
+            }
+        );
+        
+        // Créer le graphique de statut de connexion
+        var loginChart = new Chart(
+            document.getElementById('loginStatusChart').getContext('2d'),
+            {
+                type: 'doughnut',
+                data: {
+                    labels: ['Avec connexion', 'Sans connexion'],
+                    datasets: [{
+                        data: [withLoginCount, withoutLoginCount],
+                        backgroundColor: ['#1cc88a', '#858796']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        }
+                    }
+                }
+            }
+        );
+    });
+    </script>
+</body>
+</html>

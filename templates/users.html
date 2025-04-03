@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Manager Users</title>
+    
+    <!-- CSS - Bootstrap et DataTables -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/datatables.net-bs5/1.13.5/dataTables.bootstrap5.min.css">
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        
+        .container-fluid {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #0d6efd;
+            margin-bottom: 20px;
+        }
+        
+        .date-cell {
+            white-space: nowrap;
+        }
+        
+        #columnToggle {
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        /* Style pour l'impression - afficher toutes les lignes */
+        @media print {
+            .dataTables_info, 
+            .dataTables_paginate, 
+            .dataTables_length, 
+            .dataTables_filter, 
+            .btn-group, 
+            .btn {
+                display: none !important;
+            }
+            
+            table {
+                width: 100% !important;
+            }
+            
+            table td, table th {
+                padding: 5px !important;
+                font-size: 12px !important;
+            }
+            
+            /* Assurez-vous que toutes les lignes sont visibles lors de l'impression */
+            .dataTables_scroll,
+            .dataTables_scrollBody {
+                overflow: visible !important;
+                height: auto !important;
+            }
+            
+            /* Masquer la colonne des actions lors de l'impression */
+            table th:last-child, 
+            table td:last-child {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <h1>Gestion des Utilisateurs</h1>
+        
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-primary" id="exportCSV">Exporter en CSV</button>
+                    <button type="button" class="btn btn-outline-primary" id="print">Imprimer</button>
+                    <button type="button" class="btn btn-outline-primary" id="toggleColumns">Gérer colonnes</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Gestionnaire de colonnes -->
+        <div id="columnToggle" class="card mb-3">
+            <div class="card-header">
+                Afficher/Masquer les colonnes
+            </div>
+            <div class="card-body">
+                <div id="columnButtons" class="row">
+                    <!-- Les boutons seront générés ici -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tableau des utilisateurs -->
+        <table id="usersTable" class="table table-striped table-bordered" style="width:100%">
+            <thead>
+                <tr>
+                    <th data-field="id">ID</th>
+                    <th data-field="mail">Email</th>
+                    <th data-field="firstName">Prénom</th>
+                    <th data-field="lastName">Nom</th>
+                    <th data-field="displayName">Nom d'affichage</th>
+                    <th data-field="businessPhone">Tél. Pro</th>
+                    <th data-field="homePhone">Tél. Domicile</th>
+                    <th data-field="mobilePhone">Tél. Mobile</th>
+                    <th data-field="roles">Rôles</th>
+                    <th data-field="organizations">Organisations</th>
+                    <th data-field="primaryOrganization">Organisation principale</th>
+                    <th data-field="roleTenantFilter">Filtre de tenant</th>
+                    <th data-field="passwordExpirationTimestamp">Expiration mot de passe</th>
+                    <th data-field="passwordModificationTimestamp">Modif. mot de passe</th>
+                    <th data-field="createdAt">Créé le</th>
+                    <th data-field="lastModified">Dernière modification</th>
+                    <th data-field="lastLoginDate">Dernière connexion</th>
+                    <th data-field="userState">Statut</th>
+                    <th data-field="activationCodeCreationTimestamp">Création code d'activation</th>
+                    <th data-field="externalNames">Noms externes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Pour Flask, ces données seront remplacées par le rendu côté serveur -->
+                {% for user in users %}
+                <tr>
+                    <td>{{ user['id'] }}</td>
+                    <td>{{ user['mail'] }}</td>
+                    <td>{{ user['firstName'] }}</td>
+                    <td>{{ user['lastName'] }}</td>
+                    <td>{{ user['displayName'] }}</td>
+                    <td>{{ user['businessPhone'] }}</td>
+                    <td>{{ user['homePhone'] }}</td>
+                    <td>{{ user['mobilePhone'] }}</td>
+                    <td>{{ user['roles'] }}</td>
+                    <td>{{ user['organizations'] }}</td>
+                    <td>{{ user['primaryOrganization'] }}</td>
+                    <td>{{ user['roleTenantFilter'] }}</td>
+                    <td>{{ user['passwordExpirationTimestamp'] }}</td>
+                    <td>{{ user['passwordModificationTimestamp'] }}</td>
+                    <td>{{ user['createdAt'] }}</td>
+                    <td>{{ user['lastModified'] }}</td>
+                    <td>{{ user['lastLoginDate'] }}</td>
+                    <td>{{ user['userState'] }}</td>
+                    <td>{{ user['activationCodeCreationTimestamp'] }}</td>
+                    <td>{{ user['externalNames'] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Modal pour ajouter/modifier un utilisateur -->
+    <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="userModalLabel">Ajouter un utilisateur</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="userForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="inputEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="inputEmail" name="mail" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="inputId" class="form-label">ID</label>
+                                <input type="text" class="form-control" id="inputId" name="id" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="inputFirstName" class="form-label">Prénom</label>
+                                <input type="text" class="form-control" id="inputFirstName" name="firstName" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="inputLastName" class="form-label">Nom</label>
+                                <input type="text" class="form-control" id="inputLastName" name="lastName" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="inputDisplayName" class="form-label">Nom d'affichage</label>
+                                <input type="text" class="form-control" id="inputDisplayName" name="displayName">
+                            </div>
+                        </div>
+                        
+                        <!-- Autres champs du formulaire - limités pour simplifier -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="inputUserState" class="form-label">Statut</label>
+                                <select class="form-select" id="inputUserState" name="userState" required>
+                                    <option value="active">Actif</option>
+                                    <option value="inactive">Inactif</option>
+                                    <option value="pending">En attente</option>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-primary" id="saveUser">Sauvegarder</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scripts JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/datatables.net/1.13.5/jquery.dataTables.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/datatables.net-bs5/1.13.5/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            // Configuration de base pour DataTables
+            var dataTable = $('#usersTable').DataTable({
+                language: {
+                    url: 'https://cdnjs.cloudflare.com/ajax/libs/datatables.net-plugins/1.13.5/i18n/fr-FR.json'
+                },
+                columnDefs: [
+                    { targets: [5, 6, 7, 9, 11, 12, 13, 14, 15, 18, 19], visible: false }
+                ],
+                // Configuration pour que 'lengthMenu' fonctionne correctement
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Tous"]]
+            });
+            
+            // 1. GESTION DES COLONNES
+            document.getElementById('toggleColumns').addEventListener('click', function() {
+                var columnPanel = document.getElementById('columnToggle');
+                
+                if (columnPanel.style.display === 'none' || columnPanel.style.display === '') {
+                    columnPanel.style.display = 'block';
+                    
+                    // Vider et régénérer les boutons
+                    document.getElementById('columnButtons').innerHTML = '';
+                    
+                    // Générer une case à cocher pour chaque colonne
+                    dataTable.columns().every(function(index) {
+                        var column = this;
+                        var columnName = $(column.header()).text();
+                        
+                        if (index < dataTable.columns().count() - 1) { // Exclure la colonne Actions
+                            var isVisible = column.visible();
+                            
+                            var checkbox = document.createElement('div');
+                            checkbox.className = 'col-md-3 mb-2';
+                            checkbox.innerHTML = '<div class="form-check">' +
+                                '<input class="form-check-input" type="checkbox" ' + 
+                                (isVisible ? 'checked' : '') + ' id="col-' + index + '">' +
+                                '<label class="form-check-label" for="col-' + index + '">' + 
+                                columnName + '</label></div>';
+                            
+                            document.getElementById('columnButtons').appendChild(checkbox);
+                            
+                            // Ajouter l'événement de changement directement
+                            document.getElementById('col-' + index).addEventListener('change', function() {
+                                var isChecked = this.checked;
+                                dataTable.column(index).visible(isChecked);
+                            });
+                        }
+                    });
+                } else {
+                    columnPanel.style.display = 'none';
+                }
+            });
+            
+            // 2. EXPORT CSV - CORRIGÉ pour inclure toutes les lignes
+            document.getElementById('exportCSV').addEventListener('click', function() {
+                var csvContent = [];
+                
+                // En-têtes des colonnes visibles (sauf Actions)
+                var headers = [];
+                var visibleColumnIndexes = [];
+                
+                dataTable.columns().every(function(index) {
+                    if (this.visible() && index < dataTable.columns().count() - 1) { // Exclure colonne Actions
+                        headers.push('"' + $(this.header()).text() + '"');
+                        visibleColumnIndexes.push(index);
+                    }
+                });
+                csvContent.push(headers.join(','));
+                
+                // CORRECTION: Utiliser l'API DataTables pour accéder à toutes les lignes
+                // Filtrées mais pas limitées par la pagination
+                dataTable.rows({ search: 'applied' }).every(function(rowIdx) {
+                    var rowData = this.data();
+                    var rowArray = [];
+                    
+                    // Inclure uniquement les colonnes visibles
+                    visibleColumnIndexes.forEach(function(colIdx) {
+                        // Extraire le texte des cellules contenant du HTML (comme les badges)
+                        var cellContent = rowData[colIdx];
+                        var cellText;
+                        
+                        if (typeof cellContent === 'string' && cellContent.includes('<')) {
+                            // Créer un élément temporaire pour extraire le texte
+                            var tempDiv = document.createElement('div');
+                            tempDiv.innerHTML = cellContent;
+                            cellText = tempDiv.textContent || tempDiv.innerText || '';
+                        } else {
+                            cellText = cellContent || '';
+                        }
+                        
+                        rowArray.push('"' + cellText.replace(/"/g, '""') + '"');
+                    });
+                    
+                    csvContent.push(rowArray.join(','));
+                });
+                
+                // Créer et télécharger le fichier CSV
+                var csvString = csvContent.join('\n');
+                var blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+                var url = URL.createObjectURL(blob);
+                
+                var link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', 'utilisateurs.csv');
+                document.body.appendChild(link);
+                link.click();
+                
+                // Nettoyer
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            });
+            
+            // 3. IMPRESSION - CORRIGÉ pour inclure toutes les lignes
+            document.getElementById('print').addEventListener('click', function() {
+                // Créer une nouvelle fenêtre pour l'impression contenant toutes les données
+                var allRowsTableHtml = '<table class="table table-bordered">';
+                
+                // En-têtes (uniquement colonnes visibles, sauf actions)
+                allRowsTableHtml += '<thead><tr>';
+                var visibleColumns = [];
+                
+                dataTable.columns().every(function(index) {
+                    if (this.visible() && index < dataTable.columns().count() - 1) { // Exclure colonne Actions
+                        allRowsTableHtml += '<th>' + $(this.header()).text() + '</th>';
+                        visibleColumns.push(index);
+                    }
+                });
+                allRowsTableHtml += '</tr></thead><tbody>';
+                
+                // Toutes les lignes (filtrées mais pas limitées par pagination)
+                dataTable.rows({ search: 'applied' }).every(function(rowIdx) {
+                    var rowData = this.data();
+                    allRowsTableHtml += '<tr>';
+                    
+                    visibleColumns.forEach(function(colIdx) {
+                        allRowsTableHtml += '<td>' + (rowData[colIdx] || '') + '</td>';
+                    });
+                    
+                    allRowsTableHtml += '</tr>';
+                });
+                
+                allRowsTableHtml += '</tbody></table>';
+                
+                var printWindow = window.open('', '_blank');
+                printWindow.document.write(`
+                    <html>
+                        <head>
+                            <title>Utilisateurs</title>
+                            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css">
+                            <style>
+                                body { padding: 20px; }
+                                table { width: 100%; border-collapse: collapse; }
+                                th, td { padding: 8px; border: 1px solid #ddd; }
+                                th { background-color: #f2f2f2; }
+                                @media print {
+                                    @page { size: landscape; }
+                                }
+                            </style>
+                        </head>
+                        <body>
+                            <h2 class="mb-4">Liste des Utilisateurs</h2>
+                            ${allRowsTableHtml}
+                        </body>
+                    </html>
+                `);
+                
+                printWindow.document.close();
+                
+                // Attendre que le contenu soit chargé avant d'imprimer
+                printWindow.onload = function() {
+                    printWindow.print();
+                    // Ne pas fermer la fenêtre automatiquement pour permettre les options d'impression
+                };
+            });
+            
+            // Modal pour ajouter/modifier un utilisateur
+            var userModal = new bootstrap.Modal(document.getElementById('userModal'));
+            var editRowIndex = null;
+            
+            // Ajouter un utilisateur
+            document.getElementById('addUser').addEventListener('click', function() {
+                document.getElementById('userModalLabel').textContent = 'Ajouter un utilisateur';
+                document.getElementById('userForm').reset();
+                document.getElementById('inputId').value = 'nouveau-' + Math.floor(Math.random() * 1000);
+                editRowIndex = null;
+                userModal.show();
+            });
+            
+            // Modifier un utilisateur (utiliser la délégation d'événements)
+            document.querySelector('#usersTable tbody').addEventListener('click', function(e) {
+                if (e.target && e.target.classList.contains('edit-btn')) {
+                    var row = e.target.closest('tr');
+                    var rowData = dataTable.row(row).data();
+                    
+                    document.getElementById('userModalLabel').textContent = 'Modifier un utilisateur';
+                    document.getElementById('inputId').value = rowData[0] || '';
+                    document.getElementById('inputEmail').value = rowData[1] || '';
+                    document.getElementById('inputFirstName').value = rowData[2] || '';
+                    document.getElementById('inputLastName').value = rowData[3] || '';
+                    document.getElementById('inputDisplayName').value = rowData[4] || '';
+                    
+                    // Nettoyer le HTML des badges pour le statut
+                    var statusText = row.cells[17].textContent.trim();
+                    if (statusText === 'Actif') {
+                        document.getElementById('inputUserState').value = 'active';
+                    } else if (statusText === 'Inactif') {
+                        document.getElementById('inputUserState').value = 'inactive';
+                    } else {
+                        document.getElementById('inputUserState').value = 'pending';
+                    }
+                    
+                    editRowIndex = dataTable.row(row).index();
+                    userModal.show();
+                }
+                
+                // Supprimer un utilisateur
+                if (e.target && e.target.classList.contains('delete-btn')) {
+                    if (confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
+                        var row = e.target.closest('tr');
+                        dataTable.row(row).remove().draw();
+                    }
+                }
+            });
+            
+            // Sauvegarder un utilisateur
+            document.getElementById('saveUser').addEventListener('click', function() {
+                if (!document.getElementById('userForm').checkValidity()) {
+                    document.getElementById('userForm').reportValidity();
+                    return;
+                }
+                
+                var id = document.getElementById('inputId').value;
+                var email = document.getElementById('inputEmail').value;
+                var firstName = document.getElementById('inputFirstName').value;
+                var lastName = document.getElementById('inputLastName').value;
+                var displayName = document.getElementById('inputDisplayName').value || firstName + ' ' + lastName;
+                var userState = document.getElementById('inputUserState').value;
+                
+                // Formater le statut
+                var statusHTML = '';
+                if (userState === 'active') {
+                    statusHTML = '<span class="badge bg-success">Actif</span>';
+                } else if (userState === 'inactive') {
+                    statusHTML = '<span class="badge bg-danger">Inactif</span>';
+                } else {
+                    statusHTML = '<span class="badge bg-warning text-dark">En attente</span>';
+                }
+                
+                // Boutons d'action
+                var actionButtons = '<button type="button" class="btn btn-sm btn-outline-primary edit-btn">Modifier</button> ' +
+                                    '<button type="button" class="btn btn-sm btn-outline-danger delete-btn">Supprimer</button>';
+                
+                // Créer un tableau de données pour la ligne
+                var rowData = Array(dataTable.columns().count()).fill('');
+                rowData[0] = id;
+                rowData[1] = email;
+                rowData[2] = firstName;
+                rowData[3] = lastName;
+                rowData[4] = displayName;
+                rowData[17] = statusHTML;
+                rowData[rowData.length - 1] = actionButtons;
+                
+                if (editRowIndex !== null) {
+                    // Mise à jour d'un utilisateur existant
+                    dataTable.row(editRowIndex).data(rowData).draw();
+                } else {
+                    // Ajout d'un nouvel utilisateur
+                    dataTable.row.add(rowData).draw();
+                }
+                
+                userModal.hide();
+            });
+        });
+    </script>
+</body>
+</html>
