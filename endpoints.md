@@ -46,7 +46,3 @@ https://{amlocation}/dw/rest/v1/users/{userId}/audit-log-records
 - `userId`: User ID
 **Method**: GET
 **Response**: JSON containing audit log records
-
-## API Version
-
-The endpoints use API version "v1" as specified in the URL paths.
