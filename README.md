@@ -34,7 +34,7 @@ cd gaiaOAuth2
 
 2. Install the required dependencies:
 ```bash
-pip install flask requests pyjwt
+pip3 install requirements.txt 
 ```
 
 3. Update the configuration file `config.cfg` in the project root with the following content:
