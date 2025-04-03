@@ -28,7 +28,7 @@ gaiaOAuth2 is a management tool for Salesforce B2C Account Manager that allows a
 
 1. Clone this repository:
 ```bash
-git clone https://github.com/your-account/gaiaOAuth2.git
+git clone https://github.com/arouge/gaiaOAuth2.git
 cd gaiaOAuth2
 ```
 
@@ -37,7 +37,7 @@ cd gaiaOAuth2
 pip install flask requests pyjwt
 ```
 
-3. Create a configuration file `config.cfg` in the project root with the following content:
+3. Update the configuration file `config.cfg` in the project root with the following content:
 ```ini
 [User and Pwd]
 clientId = your_client_id
