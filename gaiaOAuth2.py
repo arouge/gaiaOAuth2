@@ -16,7 +16,6 @@ import time
 import shutil
 
 app = Flask(__name__)
-app.secret_key = "wqgO5k09iu7QSmMlVIG" 
 
 #version="v1" #This variable is used in the http call. To ensure better portability, it has been set as a variable instead of being hard coded.
 
@@ -37,7 +36,11 @@ amLocation = configuration ['User and Pwd']['amlocation']
 if(amLocation is None):
 	print("Location of Account Manager is not set.Exiting.")
 	sys.exit()
-
+	
+app.secret_key = configuration ['User and Pwd']['secretKey']
+if(app.secret_key is None):
+	print("Secret key is not set.Exiting.")
+	sys.exit()
 
 #The client ID is used by Account Manager to review if the redirect URL is matching any allowed howst.
 
