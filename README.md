@@ -81,7 +81,7 @@ http://localhost:3000
 
 ## File Structure
 
-- `app.py`: Main Flask application
+- `gaiaOAuth2.py`: Main Flask application
 - `config.cfg`: Configuration file (to be created)
 - `templates/`: Folder containing HTML templates
 - `static/`: Folder for CSS files and generated ZIP archives
