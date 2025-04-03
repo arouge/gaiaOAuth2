@@ -8,6 +8,8 @@ gaiaOAuth2 is a management tool for Salesforce B2C Account Manager that allows a
 - Extracting user audit logs
 - Generating and downloading ZIP archives containing audit data in XML format
 
+This project is at very early stage and is more a place holder for ideas so the community can share their need and how they would like to implement them, I (Alex Rouge) have created this project in the hope it helps both the community. In the actual state, this flask project is not ready to be productize. To deploy in production, a nginx server deployement is needed but this goes beyond the scope of this project.
+
 ## Features
 
 - **OAuth2 Authentication**: Secure connection to Salesforce B2C Account Manager
