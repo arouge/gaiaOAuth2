@@ -1,0 +1,52 @@
+# Python bytecode files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Virtual environments
+venv/
+env/
+ENV/
+.env/
+
+# Configuration files with potential sensitive information
+config.cfg
+*.cfg
+# But keep examples and templates
+!*.cfg.example
+!*.cfg.template
+
+# Log files
+*.log
+logs/
+
+# Temporary files
+*.tmp
+.DS_Store
+Thumbs.db
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment variables
+.env
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Flask session files
+flask_session/
+
+# Jupyter notebooks
+.ipynb_checkpoints
+*.ipynb
