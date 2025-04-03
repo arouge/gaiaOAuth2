@@ -50,6 +50,7 @@ You need to configure the following items in the `config.cfg` file:
 
 - `clientId`: The OAuth2 client identifier obtained from Salesforce B2C Account Manager
 - `amlocation`: The URL of your Account Manager instance (without https://)
+- `secretKey`: A secret key used to secure the Flask session and encrypt sensitive data
 
 Additionally, ensure that the following redirect URL is authorized in your OAuth2 configuration in Account Manager:
 ```
