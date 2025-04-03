@@ -219,7 +219,7 @@ def userList():
 	for eachUser in userJson["content"]:
 		userList.append(eachUser)
 
-	return render_template('dashboard.html', users = userList)
+	return render_template('users.html', users = userList)
 
 @app.route('/audit')
 def retrieveUserAudit():
