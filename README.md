@@ -44,6 +44,7 @@ pip3 install requirements.txt
 [User and Pwd]
 clientId = your_client_id
 amlocation = account-manager-domain.com
+secretKey = a_secret_to_secure_sessions_data
 ```
 
 ## Configuration
