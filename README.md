@@ -98,7 +98,3 @@ http://localhost:3000
 ## Contribution
 
 Contributions are welcome! Feel free to submit pull requests or open issues to improve this tool.
-
-## License
-
-[Specify your license here]
