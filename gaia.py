@@ -5,7 +5,6 @@ import os
 import sys
 import configparser
 from urllib import parse
-import SfccConnector
 import array
 import zipfile
 from datetime import datetime
