@@ -60,7 +60,7 @@ http://localhost:3000/redirect
 
 1. Start the application:
 ```bash
-python app.py
+python gaia.py
 ```
 
 2. Access the application via your browser:
