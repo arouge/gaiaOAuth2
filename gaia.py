@@ -35,7 +35,7 @@ if(clientId is None):
 
 amLocation = configuration ['User and Pwd']['amlocation']
 if(amLocation is None):
-	print("ALocation os Account Manager is not set.Exiting.")
+	print("Location of Account Manager is not set.Exiting.")
 	sys.exit()
 
 
