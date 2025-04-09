@@ -1,104 +1,117 @@
-# gaiaOAuth2
+# Gaia OAuth2
 
-## Description
-gaiaOAuth2 is a management tool for Salesforce B2C Account Manager that allows administrators to connect via OAuth2 to perform scripted management operations, including:
+Gaia is a Flask-based web application that helps you manage and audit users in Salesforce Commerce Cloud (SFCC) organizations through the Account Manager API. It provides a simple interface to:
 
-- Listing available organizations
-- Viewing users within an organization
-- Extracting user audit logs
-- Generating and downloading ZIP archives containing audit data in XML format
+1. List organizations
+2. View users in an organization
+3. Extract audit logs for all users in an organization
 
-This project is at very early stage and is more a place holder for ideas so the community can share their need and how they would like to implement them, I (Alex Rouge) have created this project in the hope it helps both the community. In the actual state, this flask project is not ready to be productize. To deploy in production, a nginx server deployement is needed but this goes beyond the scope of this project.
-
-## Features
-
-- **OAuth2 Authentication**: Secure connection to Salesforce B2C Account Manager
-- **Organization Management**: View and select organizations associated with your account
-- **User Management**: List users within an organization
-- **Audit Extraction**: Generate audit reports for all users in an organization
-- **Data Export**: Export audit logs in XML format, compressed into a ZIP file
-
-## Requirements
+## Prerequisites
 
 - Python 3.x
-- Flask
-- Additional Python modules (see Installation section)
-- Salesforce B2C Account Manager account with API access rights
-- OAuth2 Client ID configured in Account Manager
+- Flask and dependencies (requests, jwt, etc.)
+- Salesforce Commerce Cloud Account Manager access credentials
 
 ## Installation
 
 1. Clone this repository:
-```bash
-git clone https://github.com/arouge/gaiaOAuth2.git
-cd gaiaOAuth2
-```
+   ```
+   git clone https://github.com/arouge/gaia.git
+   cd gaia
+   ```
 
 2. Install the required dependencies:
-```bash
-pip3 install requirements.txt 
-```
+   ```
+   pip3 install requirements.txt
+   ```
 
-3. Update the configuration file `config.cfg` in the project root with the following content:
-```ini
-[User and Pwd]
-clientId = your_client_id
-amlocation = account-manager-domain.com
-secretKey = a_secret_to_secure_sessions_data
-```
+3. Update `config.cfg` file in the root directory with the following structure:
+   ```
+   [User and Pwd]
+   clientId = YOUR_CLIENT_ID
+   clientSecret = YOUR_CLIENT_SECRET
+   amlocation = YOUR_ACCOUNT_MANAGER_LOCATION
+   secretKey = YOUR_SECRET_KEY
+   ```
 
-## Configuration
-
-You need to configure the following items in the `config.cfg` file:
-
-- `clientId`: The OAuth2 client identifier obtained from Salesforce B2C Account Manager
-- `amlocation`: The URL of your Account Manager instance (without https://)
-- `secretKey`: A secret key used to secure the Flask session and encrypt sensitive data
-
-Additionally, ensure that the following redirect URL is authorized in your OAuth2 configuration in Account Manager:
-```
-http://localhost:3000/redirect
-```
+   - `clientId`: Your SFCC API client ID
+   - `clientSecret`: Your SFCC API client secret
+   - `amlocation`: The Account Manager domain (e.g., `account.demandware.com`)
+   - `secretKey`: A random string used for Flask session encryption
 
 ## Usage
 
 1. Start the application:
-```bash
-python3 gaiaOAuth2.py
-```
+   ```
+   python3 gaiaOAuth2.py
+   ```
 
-2. Access the application via your browser:
-```
-http://localhost:3000
-```
+2. Open your browser and navigate to:
+   ```
+   http://localhost:3000/
+   ```
 
-3. You will be automatically redirected to the Salesforce B2C Account Manager authentication page.
+3. The application will redirect you to the SFCC Account Manager for authentication.
 
-4. Once authenticated, you can:
-   - View the list of organizations you have access to
-   - Select an organization to see its users
-   - Generate and download audits for all users in an organization
+4. After successful authentication, you'll be redirected back to the application.
 
-## File Structure
+5. The main page will display a list of organizations you have access to.
 
-- `gaiaOAuth2.py`: Main Flask application
-- `config.cfg`: Configuration file (to be created)
-- `templates/`: Folder containing HTML templates
-- `static/`: Folder for CSS files and generated ZIP archives
+6. Click on an organization to view its users.
 
-## Security
+7. Use the audit function to extract and download audit logs for all users in an organization.
 
-- The application uses OAuth2 for authentication
-- JWT tokens are verified with each request
-- Expired tokens are automatically detected, requiring reauthentication
-- Verification of the validity of parameters provided in URLs
+## Application Flow
+
+1. **Authentication**: Uses OAuth2 authorization code flow to obtain access and refresh tokens from SFCC Account Manager.
+2. **Token Management**: Automatically refreshes tokens when they expire.
+3. **Organization Listing**: Retrieves and displays organizations the authenticated user has access to.
+4. **User Listing**: Shows users in a selected organization.
+5. **Audit Extraction**: Extracts audit logs for all users in an organization and provides them as a downloadable ZIP file.
+
+## Directory Structure
+
+- `gaiaOAuth2.py`: Main application file
+- `config.cfg`: Configuration file (must be created)
+- `static/`: Directory for static files and generated ZIP files
+- `templates/`: HTML templates (not included in this repository, must be created)
+
+## API Endpoints
+
+- `/`: Main page showing organizations
+- `/users`: Lists users in a given organization
+- `/audit`: Extracts audit logs for all users in an organization
+- `/download/<filename>`: Endpoint to download generated ZIP files
+- `/redirect`: OAuth2 callback endpoint
+- `/style.css`: Serves CSS styles
+
+## Template Requirements
+
+The application expects the following HTML templates in the `templates` directory:
+
+1. `index.html`: Displays organizations
+2. `users.html`: Displays users in an organization  
+3. `audit.html`: Displays a download link for audit logs
+
+## Security Features
+
+- JWT token validation
+- Token refresh functionality
+- Session management
+- File download security checks
 
 ## Limitations
 
-- The application is designed to work on localhost on port 3000
-- A maximum of 1000 organizations can be displayed
-- Audit log archives are temporarily stored in the `static/` folder
+- The application retrieves a maximum of 1000 organizations at once
+- The SFCC API has rate limits that may affect performance with large datasets
 
-## Contribution
+## Troubleshooting
 
-Contributions are welcome! Feel free to submit pull requests or open issues to improve this tool.
+1. **Configuration File Missing**: Ensure `config.cfg` exists and has all required fields.
+2. **Authentication Failures**: Verify your clientId and clientSecret are correct.
+3. **Permission Errors**: Ensure you have proper permissions in SFCC Account Manager.
+4. **File Creation Errors**: Check that the application has write permissions for the folders it needs to create.
+
+## Author
+
+[arouge](https://github.com/arouge)
