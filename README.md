@@ -38,6 +38,7 @@ Gaia is a Flask-based web application that helps you manage and audit users in S
    - `clientSecret`: Your SFCC API client secret
    - `amlocation`: The Account Manager domain (e.g., `account.demandware.com`)
    - `secretKey`: A random string used for Flask session encryption
+      - A good secret key can be generated using openssl using the command `openssl rand -base64 15 | tr -dc 'a-zA-Z0-9' | head -c 20` 
 
 ## Usage
 
