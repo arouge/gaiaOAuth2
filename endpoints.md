@@ -6,12 +6,13 @@ This document lists all the Salesforce B2C Account Manager endpoints used in the
 
 ```
 https://{amlocation}/dwsso/oauth2/authorize
+https://{amlocation}/dwsso/oauth2/access_token
 ```
 **Purpose**: Initiates the OAuth2 authorization flow to authenticate the user.  
 **Parameters**:
 - `client_id`: Your OAuth client ID
 - `redirect_uri`: Callback URL (http://localhost:3000/redirect)
-- `response_type`: Set to "token" for implicit grant flow
+- `response_type`: Set to "code" to respect OAuth2 process
 
 ## Organization Endpoints
 
