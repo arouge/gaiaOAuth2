@@ -161,7 +161,7 @@ def verify_token_and_redirect():
         return 'NOK'
     
 def revokeToken():
-    revocation_endpoint = "https://"+amLocation + "/services/oauth2/revoke"
+    revocation_endpoint = "https://"+amLocation + "/dwsso/oauth2/token/revoke"
     headers = {
         'Content-Type': 'application/x-www-form-urlencoded'
     }
@@ -170,7 +170,8 @@ def revokeToken():
         access_data = {
             'token': session['access_token'],
             'token_type_hint': 'access_token',
-            'client_id': clientId
+            'client_id': clientId,
+            'client_secret': clientSecret
         }
         
         access_response = requests.post(
@@ -189,7 +190,8 @@ def revokeToken():
         refresh_data = {
             'token': session['refresh_token'],
             'token_type_hint': 'refresh_token',
-            'client_id': clientId
+            'client_id': clientId,
+            'client_secret': clientSecret
         }
         
         refresh_response = requests.post(
