@@ -323,8 +323,6 @@ def style():
 
 @app.route('/redirect')
 def exchangecode():
-    print("Echange du code pour un jeton")
-
     #Here we verify existence of access_token (which is highly unlikely)
     # We exchange a code granted by Account Manager to get both a refresh token and an access token
     # At the time of writing, access_token as a 30 minutes (1800 seconds) validty while the refresh token
@@ -352,7 +350,6 @@ def exchangecode():
         responseJson = response.json()
         session['access_token'] = responseJson["access_token"]
         session['refresh_token'] = responseJson["refresh_token"]
-        print("aaa")
 
     return redirect(session['currentPath'])
 
