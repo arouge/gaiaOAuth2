@@ -159,23 +159,81 @@ def verify_token_and_redirect():
     except (KeyError, jwt.PyJWTError) as e:
         print(f"Error while retrieving tokens.: {str(e)}")
         return 'NOK'
+    
+def revokeToken():
+    revocation_endpoint = "https://"+amLocation + "/services/oauth2/revoke"
+    headers = {
+        'Content-Type': 'application/x-www-form-urlencoded'
+    }
+    access_revoked = False
+    try:
+        access_data = {
+            'token': session['access_token'],
+            'token_type_hint': 'access_token',
+            'client_id': clientId
+        }
         
+        access_response = requests.post(
+            revocation_endpoint,
+            data=access_data,
+            headers=headers,
+            auth=None
+        )
+        
+        access_revoked = access_response.status_code == 200
+    except Exception as e:
+        print(f"Erreur lors de la révocation de l'access token: {e}")
+
+    refresh_revoked = False
+    try:
+        refresh_data = {
+            'token': session['refresh_token'],
+            'token_type_hint': 'refresh_token',
+            'client_id': clientId
+        }
+        
+        refresh_response = requests.post(
+            revocation_endpoint,
+            data=refresh_data,
+            headers=headers,
+            auth=None
+        )
+        
+        refresh_revoked = refresh_response.status_code == 200
+    except Exception as e:
+        print(f"Erreur lors de la révocation du refresh token: {e}")
+    session.clear()
+    return access_revoked, refresh_revoked
+
+@app.route('/login-process', methods=['GET', 'POST'])
+def login_process():
+         return redirect(token_url)
+     
+@app.route('/logout')
+def logout():
+    revokeToken()
+
+    #session.clear()
+    return redirect('/')
+
 @app.route('/')
 def index():
     # Mémoriser le chemin actuel
     session['currentPath'] = '/'
-    
+
     # Vérifier le token
     test_status = verify_token_and_redirect()
     if 'refreshIsNotPossible' == test_status:
-        return redirect(token_url)
+        return render_template('login.html')
     
-    if('OK' == test_status):      
+    if('OK' == test_status):
+        decoded_access = jwt.decode(session['access_token'], options={"verify_signature": False})
+        username = decoded_access['subname']      
         getOrganization()
         if 'organizations' in session:
 	        # Accéder directement au tableau
 	        organizations = session['organizations']
-        return render_template('index.html', organizations=organizations)
+        return render_template('index.html', organizations=organizations, user=username)
 
 def check_id_exists(array, id_value):
     for row in array:
@@ -193,6 +251,8 @@ def userList():
         return redirect(token_url)   
 
     if ('OK' == test_status):
+        decoded_access = jwt.decode(session['access_token'], options={"verify_signature": False})
+        username = decoded_access['subname']
         getOrganization()
         userList = []
         organizationList = session['organizations']
@@ -210,7 +270,7 @@ def userList():
         for eachUser in userJson["content"]:
             userList.append(eachUser)
 
-        return render_template('users.html', users = userList)
+        return render_template('users.html', users = userList, user=username)
 
 @app.route('/audit')
 def retrieveUserAudit():
