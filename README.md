@@ -16,7 +16,7 @@ Gaia is a Flask-based web application that helps you manage and audit users in S
 
 1. Clone this repository:
    ```
-   git clone https://github.com/arouge/gaia.git
+   git clone https://github.com/arouge/gaiaOAuth2.git
    cd gaia
    ```
 
