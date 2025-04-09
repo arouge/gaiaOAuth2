@@ -17,8 +17,6 @@ import shutil
 
 app = Flask(__name__)
 
-#version="v1" #This variable is used in the http call. To ensure better portability, it has been set as a variable instead of being hard coded.
-
 configFilePath = './config.cfg'
 	
 if(os.path.exists(configFilePath) == False):
@@ -32,6 +30,11 @@ if(clientId is None):
 	print("Client API not set in config file.Exiting.")
 	sys.exit()
 
+clientSecret = configuration ['User and Pwd']['clientSecret']
+if(clientSecret is None):
+	print("Client API password not set in config file.Exiting.")
+	sys.exit()
+
 amLocation = configuration ['User and Pwd']['amlocation']
 if(amLocation is None):
 	print("Location of Account Manager is not set.Exiting.")
@@ -42,19 +45,17 @@ if(app.secret_key is None):
 	print("Secret key is not set.Exiting.")
 	sys.exit()
 
-#The client ID is used by Account Manager to review if the redirect URL is matching any allowed howst.
+# The client ID is used by Account Manager to review if the redirect URL is matching any allowed howst.
+# To exchange the Code or refresh the token, the password of the ClientID is needed.
 
-amUrl = "https://"+amLocation+"/dwsso/oauth2/authorize?client_id="+clientId+"&redirect_uri=http://localhost:3000/redirect&response_type=token"
+token_url = "https://"+amLocation+"/dwsso/oauth2/authorize?client_id="+clientId+"&redirect_uri=http://localhost:3000/redirect&response_type=code"
 
 _offset = 0 #this variable is needed to control the amount of zone retrieved. Salesforce Commerce API eCDN only returns a maximum of 50 zones. It is therefore mandatory to loop over them using a control variable.
-
-def getBearerToken():
-	webbrowser.open(amUrl)
 
 def getHeader():
 	if(session['access_token']):
 		return {'Content-Type':'application/json','User-Agent': 'gaia https://github.com/arouge/gaia/',"Authorization": "Bearer "+session['access_token']}
-	else:
+	else:		
 		return "error"
 
 def getUserList(organizationId):
@@ -130,66 +131,51 @@ def compress_directory(source_directory, zip_name=None):
 	# Delete folder and its content here.
 	
     return zip_path
-
-def verify_token_and_redirect():
-    """
-    Vérifie si un token d'accès existe et n'est pas expiré.
-    Retourne None si le token est valide, ou une redirection si le token est absent ou expiré.
-    """
-    # Obtenir le temps EPOCH actuel
-    epoch_time = int(time.time())
+def verify_token_and_redirect():    
+    if ('access_token' not in session or 'refresh_token' not in session or
+            session['access_token'] is None or session['refresh_token'] is None):
+        return 'refreshIsNotPossible'
     
-    # Vérifier si un token d'accès existe
-    if 'access_token' not in session:
-        # Pas de token, rediriger vers l'Account Manager
-        return redirect(amUrl)
-    
-    # Décoder le token JWT sans vérifier la signature
     try:
-        decoded_payload = jwt.decode(session['access_token'], options={"verify_signature": False})
-        expirationTime = decoded_payload["exp"]
+        epoch_time = int(time.time())
         
-        # Vérifier si le token expire dans les 30 prochaines secondes
-        if epoch_time + 30 >= expirationTime:
-            # Token proche de l'expiration, rediriger
-            return redirect(amUrl)
-            
-        # Token valide
-        return None
-    except Exception as e:
-        # Erreur lors du décodage, le token est peut-être malformé
-        app.logger.error(f"Erreur lors du décodage du token: {str(e)}")
-        return redirect(amUrl)
+        decoded_access = jwt.decode(session['access_token'], options={"verify_signature": False})
+        decoded_refresh = jwt.decode(session['refresh_token'], options={"verify_signature": False})
+
+        access_exp = decoded_access["exp"]
+        refresh_exp = decoded_refresh["exp"]    
+
+        # Both tokens are expired
+        if epoch_time >= access_exp and epoch_time >= refresh_exp:
+            session.clear()
+            return 'refreshIsNotPossible'
+        
+        # Access token nearing expiration time but refresh token still valid.
+        if (epoch_time + 30 >= access_exp) and (epoch_time < refresh_exp):
+            refresh_access_token()
+            return 'OK'
+        return 'OK'
     
+    except (KeyError, jwt.PyJWTError) as e:
+        print(f"Error while retrieving tokens.: {str(e)}")
+        return 'NOK'
+        
 @app.route('/')
 def index():
     # Mémoriser le chemin actuel
     session['currentPath'] = '/'
     
     # Vérifier le token
-    redirect_response = verify_token_and_redirect()
-    if redirect_response:
-        return redirect_response
+    test_status = verify_token_and_redirect()
+    if 'refreshIsNotPossible' == test_status:
+        return redirect(token_url)
     
-    # Si nous arrivons ici, le token est valide
-    #Collecte des organisations disponibles pour l'utilisateur en cours et stockage dans la session.
-    #/dw/rest/v1/organizations?size=1000&page=0
-    #Nous ne conservons que l'Id et le nom.
-    getOrganization()
-	
-    if 'organizations' in session:
-	    # Accéder directement au tableau
-	    organizations = session['organizations']
-		
-    return render_template('index.html', organizations=organizations)
-
-@app.route('/redirect', methods=['GET'])
-def redirect_handler():
-    #Here we redirect to a server friendly url so the server can process the variable.
-	#Instead of have #access_tplem the arguments are not passed with somethiing like ?access_token
-	#Endpoint changes to process_token
-    
-    return render_template('redirect.html')
+    if('OK' == test_status):      
+        getOrganization()
+        if 'organizations' in session:
+	        # Accéder directement au tableau
+	        organizations = session['organizations']
+        return render_template('index.html', organizations=organizations)
 
 def check_id_exists(array, id_value):
     for row in array:
@@ -199,56 +185,58 @@ def check_id_exists(array, id_value):
 
 @app.route('/users')
 def userList():
-	session['currentPath'] = '/userList'
-	redirect_response = verify_token_and_redirect()
-    
-	if redirect_response:
-		return redirect_response
+    session['currentPath'] = '/userList'
 
-	getOrganization()
-	userList = []
-	organizationList = session['organizations']
+    # Vérifier le token
+    test_status = verify_token_and_redirect()
+    if 'refreshIsNotPossible' == test_status:
+        return redirect(token_url)   
 
-	#If direct access to userList endpoint is made without a parameter for organizationId, we redirect the request to the root of the site
+    if ('OK' == test_status):
+        getOrganization()
+        userList = []
+        organizationList = session['organizations']
+
+        #If direct access to userList endpoint is made without a parameter for organizationId, we redirect the request to the root of the site
 	
-	if(request.args.get('organizationId') is None):
-		return redirect("/")
+        if(request.args.get('organizationId') is None):
+            return redirect("/")
 	
-	if(check_id_exists(organizationList, request.args.get('organizationId'))):
-		userJson  = getUserList(request.args.get('organizationId'))
-	else:
-		return redirect("/")
+        if(check_id_exists(organizationList, request.args.get('organizationId'))):
+            userJson  = getUserList(request.args.get('organizationId'))
+        else:
+            return redirect("/")
 
-	for eachUser in userJson["content"]:
-		userList.append(eachUser)
+        for eachUser in userJson["content"]:
+            userList.append(eachUser)
 
-	return render_template('users.html', users = userList)
+        return render_template('users.html', users = userList)
 
 @app.route('/audit')
 def retrieveUserAudit():
-	session['currentPath'] = '/audit'
+    session['currentPath'] = '/audit'
 
-	redirect_response = verify_token_and_redirect()
-	if redirect_response:
-		return redirect_response
-	
-	getOrganization()
-	organizationId = request.args.get('organizationId')
+	# Vérifier le token
+    test_status = verify_token_and_redirect()
+    if 'refreshIsNotPossible' == test_status:
+        return redirect(token_url)
+    if('OK' == test_status):
+        getOrganization()
+        organizationId = request.args.get('organizationId')
 
-	create_folder(organizationId)
+        create_folder(organizationId)
 
-	userList = []
-	userJson  = getUserList(organizationId)
-	for eachUser in userJson["content"]:
-		auditList=[]
-		userid= eachUser["id"]
-		userAudit = getUserAudit(userid)
-		with open(organizationId+"/"+eachUser["mail"]+".xml",'w') as f:
-			json.dump(userAudit, f,ensure_ascii=False, indent=2)
-	orgPath = organizationId
-	compress_directory(orgPath,"static/"+orgPath+".zip")
-	return render_template('audit.html', zip_file_url = "/download/"+orgPath+".zip")
-
+        userList = []
+        userJson  = getUserList(organizationId)
+        for eachUser in userJson["content"]:
+            auditList=[]
+            userid= eachUser["id"]
+            userAudit = getUserAudit(userid)
+            with open(organizationId+"/"+eachUser["mail"]+".xml",'w') as f:
+                json.dump(userAudit, f,ensure_ascii=False, indent=2)
+        orgPath = organizationId
+        compress_directory(orgPath,"static/"+orgPath+".zip")
+        return render_template('audit.html', zip_file_url = "/download/"+orgPath+".zip")
 
 @app.route('/download/<filename>')
 def download_file(filename):
@@ -268,21 +256,82 @@ def download_file(filename):
     )
 
 @app.route('/style.css')
-def flask_logo():
+def style():
 	return current_app.send_static_file('style.css')
 
-@app.route('/process_token')
-def process_token():	
-	#Ici, intégrer les éléments du token dans la session.
-    session['access_token'] = request.args.get('access_token')
+@app.route('/redirect')
+def exchangecode():
+    print("Echange du code pour un jeton")
 
-    decoded_payload = jwt.decode(session['access_token'], options={"verify_signature": False})
-    expirationTime = decoded_payload["exp"]
+    #Here we verify existence of access_token (which is highly unlikely)
+    # We exchange a code granted by Account Manager to get both a refresh token and an access token
+    # At the time of writing, access_token as a 30 minutes (1800 seconds) validty while the refresh token
+    # has a 24h  (86400 seconds)
 	
-    if(session['currentPath'] is None):
-        session['currentPath'] = "/"
+    session['code'] = request.args.get('code')
+    session['client_id'] = request.args.get('client_id')
+
+    exchangeUrl = "https://" + amLocation + "/dwsso/oauth2/access_token"
+    
+    data = {
+        "grant_type": "authorization_code",
+        "code": session['code'],
+        "redirect_uri": "http://localhost:3000/redirect",
+        "client_id": session['client_id'],
+		"client_secret": clientSecret
+    }
+    
+    headers = {
+        "Content-Type": "application/x-www-form-urlencoded"
+    }
 	
+    response = requests.post(exchangeUrl, data=data, headers=headers)
+    if(200 == response.status_code):
+        responseJson = response.json()
+        session['access_token'] = responseJson["access_token"]
+        session['refresh_token'] = responseJson["refresh_token"]
+        print("aaa")
+
     return redirect(session['currentPath'])
 
+def refresh_access_token():
+    refresh_token = session.get('refresh_token')
+    if not refresh_token:
+        return False, "Aucun refresh token disponible"
+    
+    refreshUrl = "https://" + amLocation + "/dwsso/oauth2/access_token"
+    
+    data = {
+        "grant_type": "refresh_token",
+        "refresh_token": refresh_token,
+        "client_id": clientId,
+        "client_secret": clientSecret
+    }
+    
+    headers = {
+        "Content-Type": "application/x-www-form-urlencoded"
+    }
+    
+    try:
+        response = requests.post(refreshUrl, data=data, headers=headers)
+
+        if response.status_code == 200:
+            response_json = response.json()
+            content = response_json.get("content", response_json)  # Utilise directement response_json si pas de clé "content"
+            
+            # Mettre à jour les tokens dans la session
+            session['access_token'] = content.get("access_token")
+            
+            # Certains serveurs renvoient un nouveau refresh token
+            if "refresh_token" in content:
+                session['refresh_token'] = content.get("refresh_token")
+                
+            return 'True', "Token renouvelé avec succès"
+        else:
+            return False, f"Erreur: {response.status_code}, {response.text}"
+            
+    except Exception as e:
+        return False, f"Exception: {str(e)}"
+    
 if __name__ == '__main__':
 	app.run(host='0.0.0.0', port=3000)
